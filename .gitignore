@@ -1,5 +1,6 @@
 target
 .tup
+/deps/HyperLevelDB
 ios
 888*.conf
 var888*
