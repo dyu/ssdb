@@ -2,7 +2,10 @@ include_rules
 # =====================================
 
 BUILD_DIR = target
+
 SNAPPY_DIR = deps/snappy-1.1.0
+SNAPPY_LIB = $(SNAPPY_DIR)/.libs/libsnappy.a
+
 HYPERLEVELDB_DIR = deps/HyperLevelDB
 HYPERLEVELDB_LIB = target/libhyperleveldb.a
 
@@ -64,8 +67,14 @@ HYPERLEVELDB_SRCS += $(HYPERLEVELDB_DIR)/util/status.cc
 
 # =====================================
 
-CXXFLAGS += -Ideps/leveldb-1.18/include -Ideps/jemalloc-4.1.0/include
-LINK_LIBS = deps/leveldb-1.18/libleveldb.a deps/snappy-1.1.0/.libs/libsnappy.a deps/jemalloc-4.1.0/lib/libjemalloc.a
+JEMALLOC_DIR = deps/jemalloc-4.1.0
+JEMALLOC_LIB = $(JEMALLOC_DIR)/lib/libjemalloc.a
+
+LEVELDB_DIR = deps/leveldb-1.18
+LEVELDB_LIB = $(LEVELDB_DIR)/libleveldb.a
+
+CXXFLAGS += -I$(LEVELDB_DIR)/include -I$(JEMALLOC_DIR)/include
+LINK_LIBS = $(LEVELDB_LIB) $(SNAPPY_LIB) $(JEMALLOC_LIB)
 LINK_FLAGS = -pthread -lrt
 
 # util
