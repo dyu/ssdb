@@ -141,8 +141,8 @@ bool MyApplication::init_jvm() {
     while (offset-- > 0 && !ends_with(other_args[offset], dot_jar))
         len--;
 
-    if (len == size || len < 2) {
-        fprintf(stderr, "Required jvm options: -cp app.jar com.example.Main\n");
+    if (len == size || len == 0) {
+        fprintf(stderr, "Required jvm options: -Djava.class.path=/path/to/app.jar com.example.Main\n");
         return false;
     }
     
@@ -182,6 +182,7 @@ bool MyApplication::init_jvm() {
     vm_args.ignoreUnrecognized = JNI_TRUE;
     vm_args.options = options;
     vm_args.nOptions = len;
+    vm_args.ignoreUnrecognized = false;
 
     /*if ((*jvm_creator)(&jvm, (void **)&env, (void *)&vm_args) < 0){
         free(options);
@@ -199,7 +200,10 @@ bool MyApplication::init_jvm() {
     jvm_env = static_cast<JNIEnv*>(env);
 
     main_class_offset = offset = len;
-    auto mc = other_args[offset++].c_str();
+
+    auto mcString = other_args[offset++];
+    std::replace(mcString.begin(), mcString.end(), '.', '/');
+    auto mc = mcString.c_str();
 
     jclass mainClass = jvm_env->FindClass(mc);
     if (mainClass == NULL) {
