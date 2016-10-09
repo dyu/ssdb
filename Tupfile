@@ -76,8 +76,6 @@ LEVELDB_LIB = $(LEVELDB_DIR)/libleveldb.a
 #CXXFLAGS += -I$(LEVELDB_DIR)/include -I$(JEMALLOC_DIR)/include
 #LINK_LIBS = $(LEVELDB_LIB) $(SNAPPY_LIB) $(JEMALLOC_LIB)
 CXXFLAGS += -I$(HYPERLEVELDB_DIR)/include -I$(JEMALLOC_DIR)/include
-LINK_LIBS = $(HYPERLEVELDB_LIB) $(SNAPPY_LIB) $(JEMALLOC_LIB)
-LINK_FLAGS = -pthread -lrt
 
 # util
 LIBUTIL = target/libutil.a
@@ -145,4 +143,8 @@ SERVER_OBJS += target/src/cluster_store.o
 SERVER_OBJS += target/src/cluster_migrate.o
 SERVER_OBJS += target/client/SSDB_impl.o
 
-: $(SERVER_OBJS) $(SERVER_LIBS) |> $(CXX) -o %o $(OPT_FLAGS) %f $(LINK_LIBS) $(LINK_FLAGS) |> target/bin/ssdb-server
+#LINK_LIBS = $(LEVELDB_LIB) $(SNAPPY_LIB) $(JEMALLOC_LIB)
+LINK_LIBS = $(HYPERLEVELDB_LIB) $(SNAPPY_LIB) $(JEMALLOC_LIB)
+LINK_FLAGS = -pthread -lrt
+
+: $(SERVER_OBJS) $(SERVER_LIBS) $(LINK_LIBS) |> $(CXX) -o %o $(OPT_FLAGS) %f $(LINK_FLAGS) |> target/bin/ssdb-server
