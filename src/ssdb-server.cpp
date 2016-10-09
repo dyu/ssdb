@@ -232,9 +232,7 @@ bool MyApplication::init_jvm() {
     
     jvm_env->CallStaticVoidMethod(mainClass, mainMethod, arr);
     jvm_env->DeleteLocalRef(arr);
-
-    printf("jvm exited.\n");
-
+    
     return true;
 }
 
