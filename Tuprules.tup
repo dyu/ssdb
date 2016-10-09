@@ -1,10 +1,6 @@
 COMMON_FLAGS = -DNDEBUG -D__STDC_FORMAT_MACROS -Wall
 
 OPT_FLAGS = -O2 -Wno-sign-compare
-# production version
-#OPT_FLAGS = -O3 -flto -fno-strict-aliasing -mcrc32
-# or
-#OPT_FLAGS = -O3 -flto -fno-strict-aliasing -mcrc32 -mtune=native
 
 CC = gcc
 CFLAGS += $(COMMON_FLAGS)
