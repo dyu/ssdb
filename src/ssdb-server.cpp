@@ -48,9 +48,9 @@ private:
 };
 
 void MyApplication::welcome(){
-	fprintf(stderr, "%s %s\n", APP_NAME, APP_VERSION);
-	fprintf(stderr, "Copyright (c) 2012-2015 ssdb.io\n");
-	fprintf(stderr, "\n");
+	//fprintf(stderr, "%s %s\n", APP_NAME, APP_VERSION);
+	//fprintf(stderr, "Copyright (c) 2012-2015 ssdb.io\n");
+	//fprintf(stderr, "\n");
 }
 
 void MyApplication::usage(int argc, char **argv){
@@ -202,7 +202,6 @@ bool MyApplication::init_jvm() {
 
     free(options);
     jvm_env = static_cast<JNIEnv*>(env);
-    printf("Created jvm.\n");
     return true;
 }
 
