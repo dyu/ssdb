@@ -1,6 +1,69 @@
 include_rules
 # =====================================
 
+BUILD_DIR = target
+SNAPPY_DIR = deps/snappy-1.1.0
+HYPERLEVELDB_DIR = deps/HyperLevelDB
+HYPERLEVELDB_LIB = target/libhyperleveldb.a
+
+# hyperleveldb
+
+HYPERLEVELDB_FLAGS += $(CXXFLAGS)
+HYPERLEVELDB_FLAGS += -DHAVE_CONFIG_H -DLEVELDB_PLATFORM_POSIX -DOS_LINUX -DSNAPPY
+HYPERLEVELDB_FLAGS += -fno-builtin-memcmp -Wno-sign-compare -Wno-unused-but-set-variable -Wno-variadic-macros
+HYPERLEVELDB_FLAGS += -I$(HYPERLEVELDB_DIR)/include -I$(HYPERLEVELDB_DIR) -I$(SNAPPY_DIR)
+
+# linux/posix
+HYPERLEVELDB_SRCS += $(HYPERLEVELDB_DIR)/port/port_posix.cc
+HYPERLEVELDB_SRCS += $(HYPERLEVELDB_DIR)/util/env_posix.cc
+
+# hyperleveldb specific
+HYPERLEVELDB_SRCS += $(HYPERLEVELDB_DIR)/db/replay_iterator.cc
+HYPERLEVELDB_SRCS += $(HYPERLEVELDB_DIR)/util/atomic.cc
+
+#HYPERLEVELDB_SRCS += $(HYPERLEVELDB_DIR)/db/dumpfile.cc
+HYPERLEVELDB_SRCS += $(HYPERLEVELDB_DIR)/db/c.cc
+HYPERLEVELDB_SRCS += $(HYPERLEVELDB_DIR)/db/builder.cc
+HYPERLEVELDB_SRCS += $(HYPERLEVELDB_DIR)/db/db_impl.cc
+HYPERLEVELDB_SRCS += $(HYPERLEVELDB_DIR)/db/db_iter.cc
+HYPERLEVELDB_SRCS += $(HYPERLEVELDB_DIR)/db/filename.cc
+HYPERLEVELDB_SRCS += $(HYPERLEVELDB_DIR)/db/dbformat.cc
+HYPERLEVELDB_SRCS += $(HYPERLEVELDB_DIR)/db/log_reader.cc
+HYPERLEVELDB_SRCS += $(HYPERLEVELDB_DIR)/db/log_writer.cc
+HYPERLEVELDB_SRCS += $(HYPERLEVELDB_DIR)/db/memtable.cc
+HYPERLEVELDB_SRCS += $(HYPERLEVELDB_DIR)/db/repair.cc
+HYPERLEVELDB_SRCS += $(HYPERLEVELDB_DIR)/db/table_cache.cc
+HYPERLEVELDB_SRCS += $(HYPERLEVELDB_DIR)/db/version_edit.cc
+HYPERLEVELDB_SRCS += $(HYPERLEVELDB_DIR)/db/version_set.cc
+HYPERLEVELDB_SRCS += $(HYPERLEVELDB_DIR)/db/write_batch.cc
+#HYPERLEVELDB_SRCS += $(HYPERLEVELDB_DIR)/helpers/memenv/memenv.cc
+HYPERLEVELDB_SRCS += $(HYPERLEVELDB_DIR)/table/block.cc
+HYPERLEVELDB_SRCS += $(HYPERLEVELDB_DIR)/table/block_builder.cc
+HYPERLEVELDB_SRCS += $(HYPERLEVELDB_DIR)/table/filter_block.cc
+HYPERLEVELDB_SRCS += $(HYPERLEVELDB_DIR)/table/format.cc
+HYPERLEVELDB_SRCS += $(HYPERLEVELDB_DIR)/table/iterator.cc
+HYPERLEVELDB_SRCS += $(HYPERLEVELDB_DIR)/table/merger.cc
+HYPERLEVELDB_SRCS += $(HYPERLEVELDB_DIR)/table/table.cc
+HYPERLEVELDB_SRCS += $(HYPERLEVELDB_DIR)/table/table_builder.cc
+HYPERLEVELDB_SRCS += $(HYPERLEVELDB_DIR)/table/two_level_iterator.cc
+HYPERLEVELDB_SRCS += $(HYPERLEVELDB_DIR)/util/arena.cc
+HYPERLEVELDB_SRCS += $(HYPERLEVELDB_DIR)/util/bloom.cc
+HYPERLEVELDB_SRCS += $(HYPERLEVELDB_DIR)/util/cache.cc
+HYPERLEVELDB_SRCS += $(HYPERLEVELDB_DIR)/util/coding.cc
+HYPERLEVELDB_SRCS += $(HYPERLEVELDB_DIR)/util/comparator.cc
+HYPERLEVELDB_SRCS += $(HYPERLEVELDB_DIR)/util/crc32c.cc
+HYPERLEVELDB_SRCS += $(HYPERLEVELDB_DIR)/util/env.cc
+HYPERLEVELDB_SRCS += $(HYPERLEVELDB_DIR)/util/filter_policy.cc
+HYPERLEVELDB_SRCS += $(HYPERLEVELDB_DIR)/util/hash.cc
+HYPERLEVELDB_SRCS += $(HYPERLEVELDB_DIR)/util/logging.cc
+HYPERLEVELDB_SRCS += $(HYPERLEVELDB_DIR)/util/options.cc
+HYPERLEVELDB_SRCS += $(HYPERLEVELDB_DIR)/util/status.cc
+
+: foreach $(HYPERLEVELDB_SRCS) |> $(CXX) -c $(HYPERLEVELDB_FLAGS) %f -o %o |> $(BUILD_DIR)/hyperleveldb/%B.o
+: $(BUILD_DIR)/hyperleveldb/*.o |> !ar |> $(HYPERLEVELDB_LIB)
+
+# =====================================
+
 CXXFLAGS += -Ideps/leveldb-1.18/include -Ideps/jemalloc-4.1.0/include
 LINK_LIBS = deps/leveldb-1.18/libleveldb.a deps/snappy-1.1.0/.libs/libsnappy.a deps/jemalloc-4.1.0/lib/libjemalloc.a
 LINK_FLAGS = -pthread -lrt
