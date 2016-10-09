@@ -9,5 +9,6 @@ if [ ! -e HyperLevelDB ]; then
     cd HyperLevelDB
     mkdir build
     autoreconf -i && ./configure --prefix=$PWD/build
+    cd include && ln -s hyperleveldb leveldb && cd ..
     cd ..
 fi
