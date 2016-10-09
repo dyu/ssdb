@@ -109,7 +109,7 @@ void MyApplication::run(){
 bool MyApplication::serve(){
     net = NULL;
 	net = NetworkServer::init(*conf);
-    
+
 	server = new SSDBServer(data_db, meta_db, *conf, net);
 	
 	log_info("pidfile: %s, pid: %d", app_args.pidfile.c_str(), (int)getpid());
@@ -123,9 +123,6 @@ bool MyApplication::serve(){
 }
 
 void MyApplication::destroy(bool success){
-    if (success && !other_args.empty())
-        destroy_jvm();
-    
 	delete meta_db;
 	delete data_db;
 
@@ -148,8 +145,6 @@ bool MyApplication::init_jvm() {
         fprintf(stderr, "Required jvm options: -cp app.jar com.example.Main\n");
         return false;
     }
-
-    main_class_offset = offset + 1;
     
     /*
     // from https://github.com/nginx-clojure/nginx-clojure
@@ -202,6 +197,40 @@ bool MyApplication::init_jvm() {
 
     free(options);
     jvm_env = static_cast<JNIEnv*>(env);
+
+    main_class_offset = offset = len;
+    auto mc = other_args[offset++].c_str();
+
+    jclass mainClass = jvm_env->FindClass(mc);
+    if (mainClass == NULL) {
+        fprintf(stderr, "Could not find main class: %s\n", mc);
+        destroy_jvm();
+        return false;
+    }
+
+    jmethodID mainMethod = jvm_env->GetStaticMethodID(mainClass, "main", "([Ljava/lang/String;)V");
+    if (mainMethod == NULL) {
+        fprintf(stderr, "%s does not have the method: public static void main(String[] args)\n", mc);
+        destroy_jvm();
+        return false;
+    }
+
+    size_t length = size - offset;
+    jobjectArray arr = jvm_env->NewObjectArray(length, jvm_env->FindClass("java/lang/String"), NULL);
+    if (arr == NULL) {
+        fprintf(stderr, "Could not create args for %s.main\n", mc);
+        destroy_jvm();
+        return false;
+    }
+    
+    for (size_t i = 0; i < length; i++)
+        jvm_env->SetObjectArrayElement(arr, i, jvm_env->NewStringUTF(other_args[offset++].c_str()));
+    
+    jvm_env->CallStaticVoidMethod(mainClass, mainMethod, arr);
+    jvm_env->DeleteLocalRef(arr);
+
+    printf("jvm exited.\n");
+
     return true;
 }
 
