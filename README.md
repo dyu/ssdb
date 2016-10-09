@@ -52,6 +52,7 @@ $ wget --no-check-certificate https://github.com/ideawu/ssdb/archive/master.zip
 $ unzip master
 $ cd ssdb-master
 $ make
+$ ./deps.sh && tup init && tup upd
 $ #optional, install ssdb in /usr/local/ssdb
 $ sudo make install
 
