@@ -53,9 +53,11 @@ void Application::parse_args(int argc, char **argv){
 				fprintf(stderr, "Error: bad argument: '%s'\n", app_args.start_opt.c_str());
 				exit(1);
 			}
-		}else{
+		}else if (arg[0] != '-' && app_args.conf_file.empty()){
 			app_args.conf_file = argv[i];
-		}
+		} else {
+            other_args.push_back(argv[i]);
+        }
 	}
 
 	if(app_args.conf_file.empty()){

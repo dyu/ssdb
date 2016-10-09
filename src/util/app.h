@@ -2,6 +2,7 @@
 #define UTIL_APP_H
 
 #include <string>
+#include <vector>
 
 class Config;
 
@@ -32,6 +33,7 @@ protected:
 
 	Config *conf;
 	AppArgs app_args;
+    std::vector<std::string> other_args;
 	
 private:
 	void parse_args(int argc, char **argv);

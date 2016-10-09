@@ -3,6 +3,10 @@ include_rules
 
 BUILD_DIR = target
 
+JVM_INCLUDES = -I/usr/lib/jvm/java-7-oracle/include -I/usr/lib/jvm/java-7-oracle/include/linux
+JVM_LIB_DIR = /usr/lib/jvm/java-7-oracle/jre/lib/amd64/server
+JVM_LINK_FLAGS = -Wl,-rpath=$(JVM_LIB_DIR) -L$(JVM_LIB_DIR) -ljvm
+
 SNAPPY_DIR = deps/snappy-1.1.0
 SNAPPY_LIB = $(SNAPPY_DIR)/.libs/libsnappy.a
 
@@ -124,7 +128,7 @@ CXXFLAGS += -Isrc
 
 # src
 #LIBSRC = target/libsrc.a
-CXXFLAGS += -Isrc/client
+CXXFLAGS += -Isrc/client $(JVM_INCLUDES)
 : foreach src/*.cpp |> !cxx |> target/src/%B.o
 #: target/src/*.o |> !ar |> $(LIBSRC)
 
@@ -144,6 +148,6 @@ SERVER_OBJS += target/src/cluster_store.o
 SERVER_OBJS += target/src/cluster_migrate.o
 SERVER_OBJS += target/client/SSDB_impl.o
 
-LINK_FLAGS = -pthread -lrt
+LINK_FLAGS = -pthread -lrt $(JVM_LINK_FLAGS)
 
 : $(SERVER_OBJS) $(SERVER_LIBS) $(LINK_LIBS) |> $(CXX) -o %o $(OPT_FLAGS) %f $(LINK_FLAGS) |> target/bin/ssdb-server

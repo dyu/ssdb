@@ -9,16 +9,42 @@ found in the LICENSE file.
 #include "ssdb/ssdb.h"
 #include "util/app.h"
 #include "serv.h"
+#include <jni.h>
+
+/*extern "C" {
+    #include <dlfcn.h>
+}
+typedef jint (*jni_createvm_pt)(JavaVM **pvm, void **penv, void *args);
+*/
 
 #define APP_NAME "ssdb-server"
 #define APP_VERSION SSDB_VERSION
 
+const std::string dot_jar = ".jar";
+
+inline bool ends_with(std::string const & value, std::string const & ending)
+{
+    return ending.size() <= value.size() && std::equal(ending.rbegin(), ending.rend(), value.rbegin());
+}
+
 class MyApplication : public Application
 {
 public:
-	virtual void usage(int argc, char **argv);
-	virtual void welcome();
-	virtual void run();
+    SSDB *data_db;
+    SSDB *meta_db;
+    NetworkServer *net;
+    SSDBServer *server;
+    bool serve();
+    virtual void usage(int argc, char **argv);
+    virtual void welcome();
+    virtual void run();
+private:
+    int main_class_offset;
+    JNIEnv *jvm_env;
+    JavaVM *jvm;
+    void destroy(bool success);
+    bool init_jvm();
+    void destroy_jvm();
 };
 
 void MyApplication::welcome(){
@@ -61,8 +87,7 @@ void MyApplication::run(){
 	log_info("binlog_capacity  : %d", option.binlog_capacity);
 	log_info("sync_speed       : %d MB/s", conf->get_num("replication.sync_speed"));
 
-	SSDB *data_db = NULL;
-	SSDB *meta_db = NULL;
+    data_db = NULL;
 	data_db = SSDB::open(option, data_db_dir);
 	if(!data_db){
 		log_fatal("could not open data db: %s", data_db_dir.c_str());
@@ -70,6 +95,7 @@ void MyApplication::run(){
 		exit(1);
 	}
 
+    meta_db = NULL;
 	meta_db = SSDB::open(Options(), meta_db_dir);
 	if(!meta_db){
 		log_fatal("could not open meta db: %s", meta_db_dir.c_str());
@@ -77,24 +103,117 @@ void MyApplication::run(){
 		exit(1);
 	}
 
-	NetworkServer *net = NULL;	
-	SSDBServer *server;
+    destroy(other_args.empty() ? serve() : init_jvm());
+}
+
+bool MyApplication::serve(){
+    net = NULL;
 	net = NetworkServer::init(*conf);
+    
 	server = new SSDBServer(data_db, meta_db, *conf, net);
 	
 	log_info("pidfile: %s, pid: %d", app_args.pidfile.c_str(), (int)getpid());
 	log_info("ssdb server started.");
 	net->serve();
-	
+
 	delete net;
 	delete server;
+
+    return true;
+}
+
+void MyApplication::destroy(bool success){
+    if (success && !other_args.empty())
+        destroy_jvm();
+    
 	delete meta_db;
 	delete data_db;
 
 	log_info("%s exit.", APP_NAME);
+
+    if (!success)
+        exit(1);
+}
+
+bool MyApplication::init_jvm() {
+    size_t size = other_args.size(), len = size, offset = size;
+    JavaVMInitArgs vm_args;
+    JavaVMOption *options;
+    JNIEnv *env;
+
+    while (offset-- > 0 && !ends_with(other_args[offset], dot_jar))
+        len--;
+
+    if (len == size || len < 2) {
+        fprintf(stderr, "Required jvm options: -cp app.jar com.example.Main\n");
+        return false;
+    }
+
+    main_class_offset = offset + 1;
+    
+    /*
+    // from https://github.com/nginx-clojure/nginx-clojure
+    void *env;
+    void *libVM;
+    jni_createvm_pt jvm_creator;
+
+    if (jvm != NULL && jvm_env != NULL) {
+        return 0;
+    }
+
+    // append RTLD_GLOBAL flag for Alpine Linux on which OpenJDK 7 libjvm.so 
+    // can not correctly handle cross symbol links from libjava.so, libverify.so
+    if (NULL == (libVM = dlopen(jvm_path, RTLD_LAZY | RTLD_GLOBAL))) {
+        fprintf(stderr, "Could not open shared lib :%s,\n %s\n", jvm_path, dlerror());
+        return false;
+    }
+
+    if (NULL == (jvm_creator = reinterpret_cast<jni_createvm_pt>(dlsym(libVM, "JNI_CreateJavaVM"))) &&
+        // for macosx default jvm
+        NULL == (jvm_creator = reinterpret_cast<jni_createvm_pt>(dlsym(libVM, "JNI_CreateJavaVM_Impl")))) {
+        return false;
+    }*/
+    
+    if (NULL == (options = static_cast<JavaVMOption*>(malloc(len * sizeof(JavaVMOption))))) {
+        return false;
+    }
+
+    for (size_t i = 0; i < len; i++){
+        options[i].extraInfo = NULL;
+        options[i].optionString = const_cast<char*>(other_args[i].c_str());
+    }
+
+    vm_args.version = JNI_VERSION_1_6;
+    vm_args.ignoreUnrecognized = JNI_TRUE;
+    vm_args.options = options;
+    vm_args.nOptions = len;
+
+    /*if ((*jvm_creator)(&jvm, (void **)&env, (void *)&vm_args) < 0){
+        free(options);
+        fprintf(stderr, "Could not create java vm.\n");
+        return 1;
+    }*/
+
+    if (JNI_CreateJavaVM(&jvm, (void **)&env, &vm_args) < 0) {
+        free(options);
+        fprintf(stderr, "Could not create java vm.\n");
+        return false;
+    }
+
+    free(options);
+    jvm_env = static_cast<JNIEnv*>(env);
+    printf("Created jvm.\n");
+    return true;
+}
+
+void MyApplication::destroy_jvm() {
+    jclass systemClass = jvm_env->FindClass("java/lang/System");
+    jmethodID exitMethod = jvm_env->GetStaticMethodID(systemClass, "exit", "(I)V");
+    jvm_env->CallStaticVoidMethod(systemClass, exitMethod, 0);
+    jvm->DestroyJavaVM();
 }
 
 int main(int argc, char **argv){
 	MyApplication app;
-	return app.main(argc, argv);
+    return app.main(argc, argv);
 }
