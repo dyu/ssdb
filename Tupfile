@@ -1,0 +1,74 @@
+include_rules
+# =====================================
+
+CXXFLAGS += -Ideps/leveldb-1.18/include -Ideps/jemalloc-4.1.0/include
+LINK_LIBS = deps/leveldb-1.18/libleveldb.a deps/snappy-1.1.0/.libs/libsnappy.a deps/jemalloc-4.1.0/lib/libjemalloc.a
+LINK_FLAGS = -pthread -lrt
+
+# util
+LIBUTIL = target/libutil.a
+#: foreach src/util/*.cpp |> !cxx |> target/util/%B.o
+: src/util/app.cpp |> !cxx |> target/util/%B.o
+: src/util/log.cpp |> !cxx |> target/util/%B.o
+: src/util/config.cpp |> !cxx |> target/util/%B.o
+: src/util/bytes.cpp |> !cxx |> target/util/%B.o
+: src/util/sorted_set.cpp |> !cxx |> target/util/%B.o
+
+: target/util/*.o |> !ar |> $(LIBUTIL)
+
+# net
+LIBNET = target/libnet.a
+#: foreach src/net/*.cpp |> !cxx |> target/net/%B.o
+: src/net/fde.cpp |> !cxx |> target/net/%B.o
+: src/net/link.cpp |> !cxx |> target/net/%B.o
+: src/net/resp.cpp |> !cxx |> target/net/%B.o
+: src/net/proc.cpp |> !cxx |> target/net/%B.o
+: src/net/worker.cpp |> !cxx |> target/net/%B.o
+: src/net/server.cpp |> !cxx |> target/net/%B.o
+
+: target/net/*.o |> !ar |> $(LIBNET)
+
+# ssdb
+LIBSSDB = target/libssdb.a
+#: foreach src/ssdb/*.cpp |> !cxx |> target/ssdb/%B.o
+: src/ssdb/ssdb_impl.cpp |> !cxx |> target/ssdb/%B.o
+: src/ssdb/iterator.cpp |> !cxx |> target/ssdb/%B.o
+: src/ssdb/options.cpp |> !cxx |> target/ssdb/%B.o
+: src/ssdb/t_kv.cpp |> !cxx |> target/ssdb/%B.o
+: src/ssdb/t_hash.cpp |> !cxx |> target/ssdb/%B.o
+: src/ssdb/t_zset.cpp |> !cxx |> target/ssdb/%B.o
+: src/ssdb/t_queue.cpp |> !cxx |> target/ssdb/%B.o
+: src/ssdb/binlog.cpp |> !cxx |> target/ssdb/%B.o
+: src/ssdb/ttl.cpp |> !cxx |> target/ssdb/%B.o
+
+: target/ssdb/*.o |> !ar |> $(LIBSSDB)
+
+# client
+LIBCLIENT = target/libclient.a
+CXXFLAGS += -Isrc
+: foreach src/client/*.cpp |> !cxx |> target/client/%B.o
+: target/client/*.o |> !ar |> $(LIBCLIENT)
+
+# src
+LIBSRC = target/libsrc.a
+CXXFLAGS += -Isrc/client
+: foreach src/*.cpp |> !cxx |> target/src/%B.o
+: target/src/*.o |> !ar |> $(LIBSRC)
+
+SERVER_LIBS = $(LIBSSDB) $(LIBUTIL) $(LIBNET)
+SERVER_OBJS += target/src/ssdb-server.o
+SERVER_OBJS += target/src/proc_kv.o
+SERVER_OBJS += target/src/proc_hash.o
+SERVER_OBJS += target/src/proc_zset.o
+SERVER_OBJS += target/src/proc_queue.o
+SERVER_OBJS += target/src/backend_dump.o
+SERVER_OBJS += target/src/backend_sync.o
+SERVER_OBJS += target/src/slave.o
+SERVER_OBJS += target/src/serv.o
+SERVER_OBJS += target/src/proc_cluster.o
+SERVER_OBJS += target/src/cluster.o
+SERVER_OBJS += target/src/cluster_store.o
+SERVER_OBJS += target/src/cluster_migrate.o
+SERVER_OBJS += target/client/SSDB_impl.o
+
+: $(SERVER_OBJS) $(SERVER_LIBS) |> $(CXX) -o %o $(OPT_FLAGS) %f $(LINK_LIBS) $(LINK_FLAGS) |> target/bin/ssdb-server

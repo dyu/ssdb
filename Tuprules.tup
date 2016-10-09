@@ -1,0 +1,27 @@
+COMMON_FLAGS = -DNDEBUG -D__STDC_FORMAT_MACROS -Wall
+
+OPT_FLAGS = -O2 -Wno-sign-compare
+# production version
+#OPT_FLAGS = -O3 -flto -fno-strict-aliasing -mcrc32
+# or
+#OPT_FLAGS = -O3 -flto -fno-strict-aliasing -mcrc32 -mtune=native
+
+CC = gcc
+CFLAGS += $(COMMON_FLAGS)
+CFLAGS += $(OPT_FLAGS)
+
+CXX = g++
+#CXXFLAGS += -std=c++11
+CXXFLAGS += $(COMMON_FLAGS)
+CXXFLAGS += $(OPT_FLAGS)
+
+NAME = %d
+
+# =====================================
+
+!cc = |> $(CC) -c $(CFLAGS) %f -o %o |> %B.o
+!cxx = |> $(CXX) -c $(CXXFLAGS) %f -o %o |> %B.o
+
+!ar = |> ar crs %o %f |> lib$(NAME).a
+!shared = |> $(CC) -shared -fPIC -o %o -Wl,--whole-archive %f -Wl,--no-whole-archive |> lib$(NAME).so
+
