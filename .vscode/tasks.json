@@ -1,0 +1,16 @@
+{
+  "version": "0.1.0",
+  "command": "tup",
+  "isShellCommand": true,
+  "showOutput": "always",
+  "args": [
+    "upd"
+  ],
+  "isWatching": false,
+  "tasks": [
+    {
+      "taskName": ".",
+      "isBuildCommand": true
+    }
+  ]
+}
