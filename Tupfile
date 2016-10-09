@@ -50,10 +50,10 @@ CXXFLAGS += -Isrc
 : target/client/*.o |> !ar |> $(LIBCLIENT)
 
 # src
-LIBSRC = target/libsrc.a
+#LIBSRC = target/libsrc.a
 CXXFLAGS += -Isrc/client
 : foreach src/*.cpp |> !cxx |> target/src/%B.o
-: target/src/*.o |> !ar |> $(LIBSRC)
+#: target/src/*.o |> !ar |> $(LIBSRC)
 
 SERVER_LIBS = $(LIBSSDB) $(LIBUTIL) $(LIBNET)
 SERVER_OBJS += target/src/ssdb-server.o
