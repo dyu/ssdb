@@ -25,13 +25,8 @@ int ProcWorker::proc(ProcJob *job){
 	job->result = (*p)(job->serv, job->link, *req, &job->resp);
 	job->time_proc = 1000 * (millitime() - job->stime) - job->time_wait;
 
-	if(job->link->send(job->resp.resp) == -1){
+	if(job->link->send(job->resp.resp) == -1 || job->link->write() < 0){
 		job->result = PROC_ERROR;
-	}else{
-		int len = job->link->write();
-		if(len < 0){
-			job->result = PROC_ERROR;
-		}
 	}
 	return 0;
 }
