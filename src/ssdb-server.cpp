@@ -174,7 +174,7 @@ bool MyApplication::init_jvm() {
         fprintf(stderr, "Required jvm options: -Djava.class.path=/path/to/app.jar com.example.Main\n");
         return false;
     }
-    
+
     main_class_offset = ++offset;
     
     /*
@@ -285,6 +285,7 @@ bool MyApplication::init_jvm() {
     return ok;
 }
 
+static MyApplication* instance;
 extern "C" {
 
 // public static native boolean init(byte[] data, int bao);
@@ -295,7 +296,9 @@ extern "C" {
  */
 //JNIEXPORT
 jboolean JNICALL Java_ssdb_Jni_init(JNIEnv * env, jclass clazz, jbyteArray data, jint bao) {
-    printf("init %d\n", bao);
+    if (data == NULL)
+        return instance->serve();
+    
     return true;
 }
 
@@ -311,7 +314,11 @@ bool MyApplication::init_jni(const char* lookupClass) {
     };
 
     jvm_env->RegisterNatives(jniClass, methods, sizeof(methods) / sizeof(JNINativeMethod));
-    return !ex(jvm_env);
+    if (ex(jvm_env))
+        return false;
+
+    instance = this;
+    return true;
 }
 
 int main(int argc, char **argv){
