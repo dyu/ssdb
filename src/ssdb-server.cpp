@@ -161,7 +161,8 @@ void MyApplication::destroy_jvm() {
 }
 
 bool MyApplication::init_jvm() {
-    size_t size = other_args.size(), len = size, offset = size, start = 0;
+    const size_t size = other_args.size();
+    size_t len = size, offset = size, start = 0;
     JavaVMInitArgs vm_args;
     JavaVMOption *options;
     JNIEnv *env;
@@ -173,6 +174,8 @@ bool MyApplication::init_jvm() {
         fprintf(stderr, "Required jvm options: -Djava.class.path=/path/to/app.jar com.example.Main\n");
         return false;
     }
+    
+    main_class_offset = ++offset;
     
     /*
     // from https://github.com/nginx-clojure/nginx-clojure
@@ -197,10 +200,6 @@ bool MyApplication::init_jvm() {
         return false;
     }*/
     
-    if (NULL == (options = static_cast<JavaVMOption*>(malloc(len * sizeof(JavaVMOption))))) {
-        return false;
-    }
-
     std::string jniClass;
     if (other_args[start] == "-jni") {
         if (other_args[++start][0] != '-') {
@@ -212,9 +211,14 @@ bool MyApplication::init_jvm() {
         }
     }
 
-    for (; start < len; start++) {
-        options[start].extraInfo = NULL;
-        options[start].optionString = const_cast<char*>(other_args[start].c_str());
+    len = offset - start;
+    if (NULL == (options = static_cast<JavaVMOption*>(malloc(len * sizeof(JavaVMOption))))) {
+        return false;
+    }
+
+    for (size_t i = 0; i < len; i++) {
+        options[i].extraInfo = NULL;
+        options[i].optionString = const_cast<char*>(other_args[start++].c_str());
     }
 
     vm_args.version = JNI_VERSION_1_6;
@@ -237,8 +241,6 @@ bool MyApplication::init_jvm() {
 
     free(options);
     jvm_env = static_cast<JNIEnv*>(env);
-
-    main_class_offset = offset = len;
 
     auto mcString = other_args[offset++];
     std::replace(mcString.begin(), mcString.end(), '.', '/');
@@ -264,15 +266,15 @@ bool MyApplication::init_jvm() {
         return false;
     }
 
-    size_t length = size - offset;
-    jobjectArray arr = jvm_env->NewObjectArray(length, jvm_env->FindClass("java/lang/String"), NULL);
+    len = size - offset;
+    jobjectArray arr = jvm_env->NewObjectArray(len, jvm_env->FindClass("java/lang/String"), NULL);
     if (check(arr == NULL, jvm_env)) {
         fprintf(stderr, "Could not create args for %s.main\n", mc);
         destroy_jvm();
         return false;
     }
     
-    for (size_t i = 0; i < length; i++)
+    for (size_t i = 0; i < len; i++)
         jvm_env->SetObjectArrayElement(arr, i, jvm_env->NewStringUTF(other_args[offset++].c_str()));
     
     jvm_env->CallStaticVoidMethod(mainClass, mainMethod, arr);
