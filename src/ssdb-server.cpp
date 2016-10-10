@@ -128,8 +128,15 @@ void MyApplication::run(){
 }
 
 bool MyApplication::serve(){
+    auto readers = conf->get_num("readers");
+    auto writers = conf->get_num("writers");
+    if (readers == 0)
+        readers = 4;
+    if (writers == 0)
+        writers = 1;
+    
     net = NULL;
-	net = NetworkServer::init(*conf);
+	net = NetworkServer::init(*conf, readers, writers);
 
 	server = new SSDBServer(data_db, meta_db, *conf, net);
 	
