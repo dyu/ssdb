@@ -30,7 +30,9 @@ public final class Jni
     
     public static void main(String[] args)
     {
-        init(null, BAO);
+        System.out.println("ssdb.Jni main");
+        if (args.length != 0 && "init".equals(args[0]))
+            init(null, BAO);
     }
   
 }
