@@ -43,8 +43,9 @@ private:
     JNIEnv *jvm_env;
     JavaVM *jvm;
     void cleanup(bool success);
-    bool init_jvm();
     void destroy_jvm();
+    bool init_jvm();
+    bool init_jni();
 };
 
 void MyApplication::welcome(){
@@ -130,6 +131,13 @@ void MyApplication::cleanup(bool success){
 
     if (!success)
         exit(1);
+}
+
+void MyApplication::destroy_jvm() {
+    jclass systemClass = jvm_env->FindClass("java/lang/System");
+    jmethodID exitMethod = jvm_env->GetStaticMethodID(systemClass, "exit", "(I)V");
+    jvm_env->CallStaticVoidMethod(systemClass, exitMethod, 0);
+    jvm->DestroyJavaVM();
 }
 
 bool MyApplication::init_jvm() {
@@ -219,6 +227,12 @@ bool MyApplication::init_jvm() {
         return false;
     }
 
+    if (!init_jni()) {
+        fprintf(stderr, "Could not initialize jni env.\n");
+        destroy_jvm();
+        return false;
+    }
+
     size_t length = size - offset;
     jobjectArray arr = jvm_env->NewObjectArray(length, jvm_env->FindClass("java/lang/String"), NULL);
     if (arr == NULL) {
@@ -232,15 +246,13 @@ bool MyApplication::init_jvm() {
     
     jvm_env->CallStaticVoidMethod(mainClass, mainMethod, arr);
     jvm_env->DeleteLocalRef(arr);
-    
+    destroy_jvm();
     return true;
 }
 
-void MyApplication::destroy_jvm() {
-    jclass systemClass = jvm_env->FindClass("java/lang/System");
-    jmethodID exitMethod = jvm_env->GetStaticMethodID(systemClass, "exit", "(I)V");
-    jvm_env->CallStaticVoidMethod(systemClass, exitMethod, 0);
-    jvm->DestroyJavaVM();
+bool MyApplication::init_jni() {
+    // TODO
+    return true;
 }
 
 int main(int argc, char **argv){
