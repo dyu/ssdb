@@ -65,7 +65,7 @@ private:
     void cleanup(bool success);
     void destroy_jvm();
     bool init_jvm();
-    bool init_jni();
+    bool init_jni(const char* lookupClass);
 };
 
 void MyApplication::welcome(){
@@ -161,7 +161,7 @@ void MyApplication::destroy_jvm() {
 }
 
 bool MyApplication::init_jvm() {
-    size_t size = other_args.size(), len = size, offset = size;
+    size_t size = other_args.size(), len = size, offset = size, start = 0;
     JavaVMInitArgs vm_args;
     JavaVMOption *options;
     JNIEnv *env;
@@ -201,9 +201,20 @@ bool MyApplication::init_jvm() {
         return false;
     }
 
-    for (size_t i = 0; i < len; i++){
-        options[i].extraInfo = NULL;
-        options[i].optionString = const_cast<char*>(other_args[i].c_str());
+    std::string jniClass;
+    if (other_args[start] == "-jni") {
+        if (other_args[++start][0] != '-') {
+            jniClass += other_args[start++];
+            std::replace(jniClass.begin(), jniClass.end(), '.', '/');
+        } else {
+            // default class to lookup
+            jniClass += "ssdb/Jni";
+        }
+    }
+
+    for (; start < len; start++) {
+        options[start].extraInfo = NULL;
+        options[start].optionString = const_cast<char*>(other_args[start].c_str());
     }
 
     vm_args.version = JNI_VERSION_1_6;
@@ -247,8 +258,8 @@ bool MyApplication::init_jvm() {
         return false;
     }
 
-    if (!init_jni()) {
-        fprintf(stderr, "Could not initialize jni env.\n");
+    if (!jniClass.empty() && !init_jni(jniClass.c_str())) {
+        fprintf(stderr, "Could not initialize jni env for %s\n", jniClass.c_str());
         destroy_jvm();
         return false;
     }
@@ -272,9 +283,33 @@ bool MyApplication::init_jvm() {
     return ok;
 }
 
-bool MyApplication::init_jni() {
-    // TODO
+extern "C" {
+
+// public static native boolean init(byte[] data, int bao);
+/*
+ * Class:     ssdb_Jni
+ * Method:    init
+ * Signature: ([BI)Z
+ */
+//JNIEXPORT
+jboolean JNICALL Java_ssdb_Jni_init(JNIEnv * env, jclass clazz, jbyteArray data, jint bao) {
+    printf("init %d\n", bao);
     return true;
+}
+
+} // extern C
+
+bool MyApplication::init_jni(const char* lookupClass) {
+    jclass jniClass = jvm_env->FindClass(lookupClass);
+    if (check(jniClass == NULL, jvm_env))
+        return false;
+    
+    JNINativeMethod methods[] = {
+        {const_cast<char*>("init"), const_cast<char*>("([BI)Z"), reinterpret_cast<void*>(Java_ssdb_Jni_init)}
+    };
+
+    jvm_env->RegisterNatives(jniClass, methods, sizeof(methods) / sizeof(JNINativeMethod));
+    return !ex(jvm_env);
 }
 
 int main(int argc, char **argv){
