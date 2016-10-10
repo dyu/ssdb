@@ -27,6 +27,17 @@ inline bool ends_with(std::string const & value, std::string const & ending)
     return ending.size() <= value.size() && std::equal(ending.rbegin(), ending.rend(), value.rbegin());
 }
 
+static bool ex(JNIEnv *jvm_env)
+{
+    bool occured = jvm_env->ExceptionOccurred();
+    if (occured)
+    {
+        jvm_env->ExceptionDescribe();
+        jvm_env->ExceptionClear();
+    }
+    return occured;
+}
+
 static bool check(bool condition, JNIEnv *jvm_env) {
     if (condition && jvm_env->ExceptionOccurred()) {
         jvm_env->ExceptionDescribe();
@@ -254,11 +265,11 @@ bool MyApplication::init_jvm() {
         jvm_env->SetObjectArrayElement(arr, i, jvm_env->NewStringUTF(other_args[offset++].c_str()));
     
     jvm_env->CallStaticVoidMethod(mainClass, mainMethod, arr);
-    check(true, jvm_env);
+    bool ok = !ex(jvm_env);
 
     jvm_env->DeleteLocalRef(arr);
     destroy_jvm();
-    return true;
+    return ok;
 }
 
 bool MyApplication::init_jni() {
