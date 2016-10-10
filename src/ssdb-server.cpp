@@ -27,6 +27,15 @@ inline bool ends_with(std::string const & value, std::string const & ending)
     return ending.size() <= value.size() && std::equal(ending.rbegin(), ending.rend(), value.rbegin());
 }
 
+static bool check(bool condition, JNIEnv *jvm_env) {
+    if (condition && jvm_env->ExceptionOccurred()) {
+        jvm_env->ExceptionDescribe();
+        jvm_env->ExceptionClear();
+    }
+
+    return condition;
+}
+
 class MyApplication : public Application
 {
 public:
@@ -214,14 +223,14 @@ bool MyApplication::init_jvm() {
     auto mc = mcString.c_str();
 
     jclass mainClass = jvm_env->FindClass(mc);
-    if (mainClass == NULL) {
+    if (check(mainClass == NULL, jvm_env)) {
         fprintf(stderr, "Could not find main class: %s\n", mc);
         destroy_jvm();
         return false;
     }
 
     jmethodID mainMethod = jvm_env->GetStaticMethodID(mainClass, "main", "([Ljava/lang/String;)V");
-    if (mainMethod == NULL) {
+    if (check(mainMethod == NULL, jvm_env)) {
         fprintf(stderr, "%s does not have the method: public static void main(String[] args)\n", mc);
         destroy_jvm();
         return false;
@@ -235,7 +244,7 @@ bool MyApplication::init_jvm() {
 
     size_t length = size - offset;
     jobjectArray arr = jvm_env->NewObjectArray(length, jvm_env->FindClass("java/lang/String"), NULL);
-    if (arr == NULL) {
+    if (check(arr == NULL, jvm_env)) {
         fprintf(stderr, "Could not create args for %s.main\n", mc);
         destroy_jvm();
         return false;
@@ -245,6 +254,8 @@ bool MyApplication::init_jvm() {
         jvm_env->SetObjectArrayElement(arr, i, jvm_env->NewStringUTF(other_args[offset++].c_str()));
     
     jvm_env->CallStaticVoidMethod(mainClass, mainMethod, arr);
+    check(true, jvm_env);
+
     jvm_env->DeleteLocalRef(arr);
     destroy_jvm();
     return true;
