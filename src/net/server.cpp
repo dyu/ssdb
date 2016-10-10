@@ -197,6 +197,7 @@ NetworkServer* NetworkServer::init(const Config &conf, int num_readers, int num_
 }
 
 void NetworkServer::serve(){
+    void* ptr;
 	writer = new ProcWorkerPool("writer");
 	writer->start(num_writers);
 	reader = new ProcWorkerPool("reader");
@@ -238,7 +239,8 @@ void NetworkServer::serve(){
 		
 		for(int i=0; i<(int)events->size(); i++){
 			const Fdevent *fde = events->at(i);
-			if(fde->data.ptr == serv_link){
+            ptr = fde->data.ptr;
+			if(ptr == serv_link){
 				Link *link = accept_link();
 				if(link){
 					this->link_count ++;				
@@ -248,8 +250,8 @@ void NetworkServer::serve(){
 				}else{
 					log_debug("accept return NULL");
 				}
-			}else if(fde->data.ptr == this->reader || fde->data.ptr == this->writer){
-				ProcWorkerPool *worker = (ProcWorkerPool *)fde->data.ptr;
+			}else if(ptr == this->reader || ptr == this->writer){
+				ProcWorkerPool *worker = (ProcWorkerPool *)ptr;
 				ProcJob *job = NULL;
 				if(worker->pop(&job) == 0){
 					log_fatal("reading result from workers error!");
