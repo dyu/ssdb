@@ -54,14 +54,18 @@ public:
     SSDB *meta_db;
     NetworkServer *net;
     SSDBServer *server;
+    int writers;
+    int readers;
+    int main_class_offset;
+    JNIEnv *jvm_env;
+    JavaVM *jvm;
+    jclass class_;
+    jmethodID createThread_;
     bool serve();
     virtual void usage(int argc, char **argv);
     virtual void welcome();
     virtual void run();
 private:
-    int main_class_offset;
-    JNIEnv *jvm_env;
-    JavaVM *jvm;
     void cleanup(bool success);
     void destroy_jvm();
     bool init_jvm();
@@ -76,7 +80,7 @@ void MyApplication::welcome(){
 
 void MyApplication::usage(int argc, char **argv){
 	printf("Usage:\n");
-	printf("    %s [-d] /path/to/ssdb.conf [-s start|stop|restart]\n", argv[0]);
+	printf("    %s [-d] /path/to/ssdb.conf [-s start|stop|restart] -Djava.class.path=/path/to/app.jar com.example.Main\n", argv[0]);
 	printf("Options:\n");
 	printf("    -d    run as daemon\n");
 	printf("    -s    option to start|stop|restart the server\n");
@@ -124,17 +128,10 @@ void MyApplication::run(){
 		exit(1);
 	}
 
-    cleanup(other_args.empty() ? serve() : init_jvm());
+    cleanup(init_jvm());
 }
 
 bool MyApplication::serve(){
-    auto readers = conf->get_num("readers");
-    auto writers = conf->get_num("writers");
-    if (readers == 0)
-        readers = 4;
-    if (writers == 0)
-        writers = 1;
-    
     net = NULL;
 	net = NetworkServer::init(*conf, readers, writers);
 
@@ -208,14 +205,12 @@ bool MyApplication::init_jvm() {
     }*/
     
     std::string jniClass;
-    if (other_args[start] == "-jni") {
-        if (other_args[++start][0] != '-') {
-            jniClass += other_args[start++];
-            std::replace(jniClass.begin(), jniClass.end(), '.', '/');
-        } else {
-            // default class to lookup
-            jniClass += "ssdb/Jni";
-        }
+    if (other_args[start] != "-jni" || other_args[++start][0] == '-') {
+        // default class to lookup
+        jniClass += "ssdb/Jni";
+    } else {
+        jniClass += other_args[start++];
+        std::replace(jniClass.begin(), jniClass.end(), '.', '/');
     }
 
     len = offset - start;
@@ -267,7 +262,7 @@ bool MyApplication::init_jvm() {
         return false;
     }
 
-    if (!jniClass.empty() && !init_jni(jniClass.c_str())) {
+    if (!init_jni(jniClass.c_str())) {
         fprintf(stderr, "Could not initialize jni env for %s\n", jniClass.c_str());
         destroy_jvm();
         return false;
@@ -295,21 +290,55 @@ bool MyApplication::init_jvm() {
 static MyApplication* instance;
 extern "C" {
 
-// public static native boolean init(byte[] data, int bao);
+// public static native boolean init(int writers, int readers);
 /*
  * Class:     ssdb_Jni
  * Method:    init
- * Signature: ([BI)Z
+ * Signature: (II)Z
  */
 //JNIEXPORT
-jboolean JNICALL Java_ssdb_Jni_init(JNIEnv * env, jclass clazz, jbyteArray data, jint bao) {
-    if (data == NULL)
-        return instance->serve();
+jboolean JNICALL Java_ssdb_Jni_init(JNIEnv * env, jclass clazz, jint writers, jint readers) {
+    instance->writers = writers;
+    instance->readers = readers;
+    instance->class_ = clazz;
+    instance->createThread_ = env->GetStaticMethodID(clazz, "createThread", "(JJII)V");
+    
+    return instance->serve();
+}
+
+// public static native boolean initThread(long ptrFn, long ptrArg, byte[] data);
+/*
+ * Class:     ssdb_Jni
+ * Method:    initThread
+ * Signature: (JJ[B)Z
+ */
+//JNIEXPORT
+jboolean JNICALL Java_ssdb_Jni_initThread(JNIEnv * env, jclass clazz, jlong ptrFn, jlong ptrArg, jbyteArray data) {
+    intptr_t pFn = ptrFn,
+        pArg = ptrArg;
+    
+    jmethodID handle = env->GetStaticMethodID(clazz, "handle", "(II)V");
+
+    char* buf = (char*)env->GetPrimitiveArrayCritical(data, 0);
+    if (buf == NULL)
+        return false;
+
+    ThreadFn fn = (ThreadFn)pFn;
+    (*fn)(reinterpret_cast<void*>(pArg), env, clazz, handle, buf);
+
+    env->ReleasePrimitiveArrayCritical(data, buf, 0);
     
     return true;
 }
 
 } // extern C
+
+void createThread(ThreadFn ptrFn, void* ptrArg, int type, int id) {
+    intptr_t pFn = (intptr_t)ptrFn,
+        pArg = (intptr_t)ptrArg;
+    instance->jvm_env->CallStaticVoidMethod(instance->class_, instance->createThread_, 
+            (jlong)pFn, (jlong)pArg, (jint)type, (jint)id);
+}
 
 bool MyApplication::init_jni(const char* lookupClass) {
     jclass jniClass = jvm_env->FindClass(lookupClass);
@@ -317,7 +346,8 @@ bool MyApplication::init_jni(const char* lookupClass) {
         return false;
     
     JNINativeMethod methods[] = {
-        {const_cast<char*>("init"), const_cast<char*>("([BI)Z"), reinterpret_cast<void*>(Java_ssdb_Jni_init)}
+        { const_cast<char*>("init"), const_cast<char*>("(II)Z"), reinterpret_cast<void*>(Java_ssdb_Jni_init) },
+        { const_cast<char*>("initThread"), const_cast<char*>("(JJ[B)Z"), reinterpret_cast<void*>(Java_ssdb_Jni_initThread) }
     };
 
     jvm_env->RegisterNatives(jniClass, methods, sizeof(methods) / sizeof(JNINativeMethod));

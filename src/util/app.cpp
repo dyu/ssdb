@@ -60,7 +60,7 @@ void Application::parse_args(int argc, char **argv){
         }
 	}
 
-	if(app_args.conf_file.empty()){
+	if(app_args.conf_file.empty() || other_args.empty()){
 		usage(argc, argv);
 		exit(1);
 	}

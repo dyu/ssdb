@@ -79,7 +79,7 @@ LEVELDB_LIB = $(LEVELDB_DIR)/libleveldb.a
 
 #CXXFLAGS += -I$(LEVELDB_DIR)/include -I$(JEMALLOC_DIR)/include
 #LINK_LIBS = $(LEVELDB_LIB) $(SNAPPY_LIB) $(JEMALLOC_LIB)
-CXXFLAGS += -I$(HYPERLEVELDB_DIR)/include -I$(JEMALLOC_DIR)/include
+CXXFLAGS += -I$(HYPERLEVELDB_DIR)/include -I$(JEMALLOC_DIR)/include $(JVM_INCLUDES)
 LINK_LIBS = $(HYPERLEVELDB_LIB) $(SNAPPY_LIB) $(JEMALLOC_LIB)
 
 # util
@@ -128,7 +128,7 @@ CXXFLAGS += -Isrc
 
 # src
 #LIBSRC = target/libsrc.a
-CXXFLAGS += -Isrc/client $(JVM_INCLUDES)
+CXXFLAGS += -Isrc/client
 : foreach src/*.cpp |> !cxx |> target/src/%B.o
 #: target/src/*.o |> !ar |> $(LIBSRC)
 

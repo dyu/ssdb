@@ -14,6 +14,10 @@ found in the LICENSE file.
 #include <pthread.h>
 #include <queue>
 #include <vector>
+#include <jni.h>
+
+typedef void* (*ThreadFn)(void*, JNIEnv*, jclass, jmethodID, char*);
+void createThread(ThreadFn ptrFn, void* ptrArg, int type, int id);
 
 class Mutex{
 	private:
@@ -131,14 +135,14 @@ class WorkerPool{
 		SelectableQueue<JOB> results;
 
 		int num_workers;
-		std::vector<pthread_t> tids;
+		//std::vector<pthread_t> tids;
 		bool started;
 
 		struct run_arg{
 			int id;
 			WorkerPool *tp;
 		};
-		static void* _run_worker(void *arg);
+		static void* _run_worker(void *arg, JNIEnv *env, jclass class_, jmethodID handle_, char* buf);
 	public:
 		WorkerPool(const char *name="");
 		~WorkerPool();
@@ -335,7 +339,7 @@ int WorkerPool<W, JOB>::pop(JOB *job){
 }
 
 template<class W, class JOB>
-void* WorkerPool<W, JOB>::_run_worker(void *arg){
+void* WorkerPool<W, JOB>::_run_worker(void *arg, JNIEnv *env, jclass class_, jmethodID handle_, char* buf){
 	struct run_arg *p = (struct run_arg*)arg;
 	int id = p->id;
 	WorkerPool *tp = p->tp;
@@ -369,19 +373,21 @@ int WorkerPool<W, JOB>::start(int num_workers){
 	if(started){
 		return 0;
 	}
-	int err;
-	pthread_t tid;
+	//int err;
+	//pthread_t tid;
+    const int type = name == "writer" ? 0 : 1;
 	for(int i=0; i<num_workers; i++){
 		struct run_arg *arg = new run_arg();
 		arg->id = i;
 		arg->tp = this;
 
-		err = pthread_create(&tid, NULL, &WorkerPool::_run_worker, arg);
+        createThread(&WorkerPool::_run_worker, arg, type, i);
+		/*err = pthread_create(&tid, NULL, &WorkerPool::_run_worker, arg);
 		if(err != 0){
 			fprintf(stderr, "can't create thread: %s\n", strerror(err));
 		}else{
 			tids.push_back(tid);
-		}
+		}*/
 	}
 	started = true;
 	return 0;
@@ -390,12 +396,12 @@ int WorkerPool<W, JOB>::start(int num_workers){
 template<class W, class JOB>
 int WorkerPool<W, JOB>::stop(){
 	// TODO: notify works quit and wait
-	for(int i=0; i<tids.size(); i++){
-#ifdef OS_ANDROID
-#else
-		pthread_cancel(tids[i]);
-#endif
-	}
+//	for(int i=0; i<tids.size(); i++){
+//#ifdef OS_ANDROID
+//#else
+//		pthread_cancel(tids[i]);
+//#endif
+//	}
 	started = false;
 	return 0;
 }
