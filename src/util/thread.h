@@ -122,6 +122,10 @@ class WorkerPool{
 				Worker(const std::string &name);
 				virtual ~Worker(){}
 				int id;
+                JNIEnv *env;
+                jclass class_;
+                jmethodID handle_;
+                char *buf;
 				virtual void init(){}
 				virtual void destroy(){}
 				virtual int proc(JOB job) = 0;
@@ -348,6 +352,10 @@ void* WorkerPool<W, JOB>::_run_worker(void *arg, JNIEnv *env, jclass class_, jme
 	W w(tp->name);
 	Worker *worker = (Worker *)&w;
 	worker->id = id;
+    worker->env = env;
+    worker->class_ = class_;
+    worker->handle_ = handle_;
+    worker->buf = buf;
 	worker->init();
 	while(1){
 		JOB job;
