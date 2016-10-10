@@ -298,10 +298,8 @@ void NetworkServer::serve(){
 			}else if(result == PROC_BACKEND){
 				fdes->del(link->fd());
 				this->link_count --;
-			}else{
-				if(proc_result(job, &ready_list_2) == PROC_ERROR){
-					//
-				}
+			}else if(proc_result(job, &ready_list_2) == PROC_ERROR){
+				//
 			}
 		} // end foreach ready link
 
