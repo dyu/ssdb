@@ -42,7 +42,7 @@ private:
     int main_class_offset;
     JNIEnv *jvm_env;
     JavaVM *jvm;
-    void destroy(bool success);
+    void cleanup(bool success);
     bool init_jvm();
     void destroy_jvm();
 };
@@ -103,7 +103,7 @@ void MyApplication::run(){
 		exit(1);
 	}
 
-    destroy(other_args.empty() ? serve() : init_jvm());
+    cleanup(other_args.empty() ? serve() : init_jvm());
 }
 
 bool MyApplication::serve(){
@@ -122,7 +122,7 @@ bool MyApplication::serve(){
     return true;
 }
 
-void MyApplication::destroy(bool success){
+void MyApplication::cleanup(bool success){
 	delete meta_db;
 	delete data_db;
 
