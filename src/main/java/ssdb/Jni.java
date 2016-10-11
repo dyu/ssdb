@@ -1,12 +1,15 @@
 package ssdb;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryPoolMXBean;
+
 public final class Jni
 {
     public static final int WRITERS = Integer.getInteger("ssdb.writers", 1);
     public static final int READERS = Integer.getInteger("ssdb.readers", 2);
     
-    public static final byte[][] BUF_WRITERS = new byte[WRITERS][];
-    public static final byte[][] BUF_READERS = new byte[READERS][];
+    public static final byte[][] BUF_WRITERS = new byte[WRITERS][0xFFFF];
+    public static final byte[][] BUF_READERS = new byte[READERS][0xFFFF];
     
     public static final boolean USE_UNSAFE_BAO = Boolean.getBoolean("jni.unsafe_bao");
     
@@ -48,11 +51,8 @@ public final class Jni
             @Override
             public void run()
             {
-                final byte[] buf = new byte[0xFFFF];
-                get(type)[id] = buf;
-                if (!initThread(ptrFn, ptrArg, buf))
+                if (!initThread(ptrFn, ptrArg, get(type)[id]))
                     System.err.println("Could not start thread " + id + " of type: " + type);
-                //get(type)[id] = null;
             }
         }).start();
     }
@@ -64,6 +64,12 @@ public final class Jni
     
     public static void main(String[] args)
     {
+        for (MemoryPoolMXBean memoryPoolMXBean: ManagementFactory.getMemoryPoolMXBeans())
+        {
+            System.out.println(memoryPoolMXBean.getName());
+            System.out.println(memoryPoolMXBean.getUsage().getUsed());
+        }
+        
         System.out.println("ssdb.Jni main - w: " + WRITERS + ", r: " + READERS);
         init(WRITERS, READERS);
     }
