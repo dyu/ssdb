@@ -13,7 +13,7 @@ int proc_getrange(NetworkServer *net, Link *link, const Request &req, Response *
     printf("rpc: %d\n", rpcId);
 
     jni->env->CallStaticVoidMethod(jni->class_, jni->handle_, jni->type, jni->id);
-    resp->push_back("{\"getrange\":true}");
+    resp->push_back("[{\"getrange\":true}]");
     return 0;
 }
 
@@ -30,6 +30,6 @@ int proc_setrange(NetworkServer *net, Link *link, const Request &req, Response *
     printf("rpc: %d\n", rpcId);
 
     jni->env->CallStaticVoidMethod(jni->class_, jni->handle_, jni->type, jni->id);
-    resp->push_back("{\"setrange\":true}");
+    resp->push_back("[{\"setrange\":true}]");
     return 0;
 }
