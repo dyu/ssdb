@@ -360,7 +360,7 @@ int RedisLink::send_resp(Buffer *output, const std::vector<std::string> &resp){
 	if(resp.empty()){
 		return 0;
 	}
-    if(req_desc->strategy == STRATEGY_RPC){
+    if (req_desc != NULL && req_desc->strategy == STRATEGY_RPC){
         output->append(resp[0][0] == '[' ? '+' : '-');
         output->append(resp[0].data(), resp[0].size());
         output->append("\r\n");
