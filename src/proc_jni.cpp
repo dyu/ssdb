@@ -4,23 +4,32 @@
 
 int proc_getrange(NetworkServer *net, Link *link, const Request &req, Response *resp){
     JniContext *jni = resp->jni;
-    CHECK_NUM_PARAMS(3);
+    int rpcId;
+    if (req.size() != 3 || 0 == (rpcId = req[2].Int())) {
+        resp->push_back("Invalid request");
+        return 0;
+    }
 
-    //int rpcId = req[2].Int();
+    printf("rpc: %d\n", rpcId);
 
     jni->env->CallStaticVoidMethod(jni->class_, jni->handle_, jni->type, jni->id);
-    resp->push_back("getrange!");
+    resp->push_back("{\"getrange\":true}");
     return 0;
 }
 
 int proc_setrange(NetworkServer *net, Link *link, const Request &req, Response *resp){
     JniContext *jni = resp->jni;
-    CHECK_NUM_PARAMS(4);
+    int rpcId;
+    if (req.size() != 4 || 0 == (rpcId = req[2].Int())) {
+        resp->push_back("Invalid request");
+        return 0;
+    }
 
-    //int rpcId = req[2].Int();
     //const Bytes &payload = req[3];
 
+    printf("rpc: %d\n", rpcId);
+
     jni->env->CallStaticVoidMethod(jni->class_, jni->handle_, jni->type, jni->id);
-    resp->push_back("setrange!");
+    resp->push_back("{\"setrange\":true}");
     return 0;
 }
