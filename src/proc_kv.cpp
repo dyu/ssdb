@@ -415,7 +415,7 @@ int proc_substr(NetworkServer *net, Link *link, const Request &req, Response *re
 	return 0;
 }
 
-int proc_getrange(NetworkServer *net, Link *link, const Request &req, Response *resp){
+/*int proc_getrange(NetworkServer *net, Link *link, const Request &req, Response *resp){
 	SSDBServer *serv = (SSDBServer *)net->data;
 	CHECK_NUM_PARAMS(2);
 	CHECK_KV_KEY_RANGE(1);
@@ -439,6 +439,17 @@ int proc_getrange(NetworkServer *net, Link *link, const Request &req, Response *
 		resp->push_back(str);
 	}
 	return 0;
+}*/
+int proc_getrange(NetworkServer *net, Link *link, const Request &req, Response *resp){
+    CHECK_NUM_PARAMS(2);
+    resp->push_back("getrange!");
+    return 0;
+}
+
+int proc_setrange(NetworkServer *net, Link *link, const Request &req, Response *resp){
+    CHECK_NUM_PARAMS(2);
+    resp->push_back("setrange!");
+    return 0;
 }
 
 int proc_strlen(NetworkServer *net, Link *link, const Request &req, Response *resp){

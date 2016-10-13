@@ -16,6 +16,7 @@ enum REPLY{
 enum STRATEGY{
 	STRATEGY_AUTO,
 	STRATEGY_PING,
+    STRATEGY_RPC,
 	STRATEGY_MGET,
 	STRATEGY_HMGET,
 	STRATEGY_HGETALL,
@@ -46,6 +47,8 @@ struct RedisCommand_raw
 
 static RedisCommand_raw cmds_raw[] = {
 	{STRATEGY_PING, "ping",		"ping",			REPLY_STATUS},
+    {STRATEGY_RPC,  "getrange",	"getrange",		REPLY_STATUS},
+    {STRATEGY_RPC,  "setrange",	"setrange",		REPLY_STATUS},
 
 	{STRATEGY_AUTO, "get",		"get",			REPLY_BULK},
 	{STRATEGY_AUTO, "getset",	"getset",		REPLY_BULK},
@@ -61,7 +64,7 @@ static RedisCommand_raw cmds_raw[] = {
 	{STRATEGY_AUTO, "strlen",	"strlen",		REPLY_INT},
 	{STRATEGY_AUTO, "bitcount",	"bitcount",		REPLY_INT},
 	{STRATEGY_AUTO, "substr",	"getrange",		REPLY_BULK},
-	{STRATEGY_AUTO, "getrange",	"getrange",		REPLY_BULK},
+	//{STRATEGY_AUTO, "getrange",	"getrange",		REPLY_BULK},
 	{STRATEGY_AUTO, "keys", 	"keys", 		REPLY_MULTI_BULK},
 
 	{STRATEGY_AUTO, "hset",		"hset",			REPLY_INT},
@@ -357,6 +360,12 @@ int RedisLink::send_resp(Buffer *output, const std::vector<std::string> &resp){
 	if(resp.empty()){
 		return 0;
 	}
+    if(req_desc->strategy == STRATEGY_RPC){
+        output->append('+');
+        output->append(resp[0].data(), resp[0].size());
+        output->append("\r\n");
+        return 0;
+    }
 	if(resp[0] != "ok"){
 		if(resp[0] == "error" || resp[0] == "fail" || resp[0] == "client_error"){
 			output->append("-ERR ");
