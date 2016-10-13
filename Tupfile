@@ -134,6 +134,7 @@ CXXFLAGS += -Isrc/client
 
 SERVER_LIBS = $(LIBSSDB) $(LIBUTIL) $(LIBNET)
 SERVER_OBJS += target/src/ssdb-server.o
+SERVER_OBJS += target/src/proc_jni.o
 SERVER_OBJS += target/src/proc_kv.o
 SERVER_OBJS += target/src/proc_hash.o
 SERVER_OBJS += target/src/proc_zset.o

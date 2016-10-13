@@ -440,23 +440,6 @@ int proc_substr(NetworkServer *net, Link *link, const Request &req, Response *re
 	}
 	return 0;
 }*/
-int proc_getrange(NetworkServer *net, Link *link, const Request &req, Response *resp){
-    JniContext *jni = resp->jni;
-    CHECK_NUM_PARAMS(2);
-
-    jni->env->CallStaticVoidMethod(jni->class_, jni->handle_, jni->type, jni->id);
-    resp->push_back("getrange!");
-    return 0;
-}
-
-int proc_setrange(NetworkServer *net, Link *link, const Request &req, Response *resp){
-    JniContext *jni = resp->jni;
-    CHECK_NUM_PARAMS(2);
-
-    jni->env->CallStaticVoidMethod(jni->class_, jni->handle_, jni->type, jni->id);
-    resp->push_back("setrange!");
-    return 0;
-}
 
 int proc_strlen(NetworkServer *net, Link *link, const Request &req, Response *resp){
 	SSDBServer *serv = (SSDBServer *)net->data;
