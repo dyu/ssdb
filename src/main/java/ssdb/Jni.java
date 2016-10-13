@@ -57,10 +57,26 @@ public final class Jni
         }).start();
     }
     
+    static final byte[] RESPONSE = new byte[]{
+        '[', '0', ']'
+    };
+    
     public static void handle(int type, int id)
     {
-        // TODO
-        //System.err.println("HANDLE: " + type + " | " + id);
+        final byte[] buffer = get(type)[id];
+        int offset = 0,
+                headerSize = ((buffer[offset++] & 0xFF) | (buffer[offset++] & 0xFF) << 8),
+                payloadSize = ((buffer[offset++] & 0xFF) | (buffer[offset++] & 0xFF) << 8);
+        
+        //System.err.println("h: " + headerSize + " | p: " + payloadSize);
+        
+        int tip = offset + headerSize + payloadSize,
+                responseSize = RESPONSE.length;
+        
+        buffer[tip++] = (byte)(responseSize & 0xFF);
+        buffer[tip++] = (byte)((responseSize >>>  8) & 0xFF);
+        
+        System.arraycopy(RESPONSE, 0, buffer, tip, responseSize);
     }
     
     public static void main(String[] args)
