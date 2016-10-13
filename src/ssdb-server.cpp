@@ -244,6 +244,12 @@ bool MyApplication::init_jvm() {
     free(options);
     jvm_env = static_cast<JNIEnv*>(env);
 
+    if (!init_jni(jniClass.c_str())) {
+        fprintf(stderr, "Could not initialize jni env for %s\n", jniClass.c_str());
+        destroy_jvm();
+        return false;
+    }
+    
     auto mcString = other_args[offset++];
     std::replace(mcString.begin(), mcString.end(), '.', '/');
     auto mc = mcString.c_str();
@@ -258,12 +264,6 @@ bool MyApplication::init_jvm() {
     jmethodID mainMethod = jvm_env->GetStaticMethodID(mainClass, "main", "([Ljava/lang/String;)V");
     if (check(mainMethod == NULL, jvm_env)) {
         fprintf(stderr, "%s does not have the method: public static void main(String[] args)\n", mc);
-        destroy_jvm();
-        return false;
-    }
-
-    if (!init_jni(jniClass.c_str())) {
-        fprintf(stderr, "Could not initialize jni env for %s\n", jniClass.c_str());
         destroy_jvm();
         return false;
     }
