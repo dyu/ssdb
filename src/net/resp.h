@@ -10,10 +10,12 @@ found in the LICENSE file.
 #include <inttypes.h>
 #include <string>
 #include <vector>
+#include "../util/jni_rpc.h"
 
 class Response
 {
 public:
+    JniContext *jni;
 	std::vector<std::string> resp;
 
 	int size() const;

@@ -21,6 +21,10 @@ int ProcWorker::proc(ProcJob *job){
 	const Request *req = job->req;
 	
 	proc_t p = job->cmd->proc;
+    
+    // assign jni ctx
+    job->resp.jni = &jni;
+
 	job->time_wait = 1000 * (millitime() - job->stime);
 	job->result = (*p)(job->serv, job->link, *req, &job->resp);
 	job->time_proc = 1000 * (millitime() - job->stime) - job->time_wait;

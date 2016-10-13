@@ -14,7 +14,7 @@ found in the LICENSE file.
 #include <pthread.h>
 #include <queue>
 #include <vector>
-#include <jni.h>
+#include "jni_rpc.h"
 
 typedef void* (*ThreadFn)(void*, JNIEnv*, jclass, jmethodID, char*);
 void createThread(ThreadFn ptrFn, void* ptrArg, int type, int id);
@@ -122,9 +122,7 @@ class WorkerPool{
 				Worker(const std::string &name);
 				virtual ~Worker(){}
 				int id;
-                JNIEnv *env;
-                jclass class_;
-                jmethodID handle_;
+                JniContext jni;
                 char *buf;
 				virtual void init(){}
 				virtual void destroy(){}
@@ -345,18 +343,22 @@ int WorkerPool<W, JOB>::pop(JOB *job){
 template<class W, class JOB>
 void* WorkerPool<W, JOB>::_run_worker(void *arg, JNIEnv *env, jclass class_, jmethodID handle_, char* buf){
 	struct run_arg *p = (struct run_arg*)arg;
-	int id = p->id;
 	WorkerPool *tp = p->tp;
+    int id = p->id;
+    int type = tp->name == "writer" ? 0 : 1;
 	delete p;
 
 	W w(tp->name);
 	Worker *worker = (Worker *)&w;
 	worker->id = id;
-    worker->env = env;
-    worker->class_ = class_;
-    worker->handle_ = handle_;
-    worker->buf = buf;
+    worker->jni.id = id;
+    worker->jni.type = type;
+    worker->jni.env = env;
+    worker->jni.class_ = class_;
+    worker->jni.handle_ = handle_;
+    worker->jni.buf = buf;
 	worker->init();
+
 	while(1){
 		JOB job;
 		if(tp->jobs.pop(&job) == -1){

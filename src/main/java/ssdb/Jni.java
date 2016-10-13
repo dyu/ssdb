@@ -60,6 +60,7 @@ public final class Jni
     public static void handle(int type, int id)
     {
         // TODO
+        System.err.println("HANDLE: " + type + " | " + id);
     }
     
     public static void main(String[] args)
