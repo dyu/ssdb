@@ -51,6 +51,8 @@ static int handle_rpc(NetworkServer *net, Link *link, const Request &req, Respon
         return 0;
     }
 
+    //printf("key: %.*s\n", req[1].size(), req[1].data());
+
     char *buf = write(jni->buf, req[2], req[3]);
 
     jni->env->CallStaticVoidMethod(jni->class_, jni->handle_, jni->type, jni->id);
